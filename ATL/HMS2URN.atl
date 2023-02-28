@@ -1,0 +1,6 @@
+-- @path URN=/seg.jUCMNav/src/seg/jUCMNav/emf/urn.ecore
+-- @path HMS=/HMS/model/hms.ecore
+
+
+module HAL2URN;
+create OUT: URN from IN: HMS;
