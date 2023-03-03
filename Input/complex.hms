@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="ASCII"?>
+<hms:Hospital xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:hms="http://www.example.org/hms" xmi:id="_GQC1kK41Ee29Ed8lggJ07Q" name="assignment #2" address="nowhere">
+  <rules xmi:id="_GQHuEK41Ee29Ed8lggJ07Q" name="Heart Surgery">
+    <expression xsi:type="hms:CompoundTerm" xmi:id="_GQHuEa41Ee29Ed8lggJ07Q">
+      <LHS xsi:type="hms:CompoundTerm" xmi:id="_GQHuEq41Ee29Ed8lggJ07Q" operator="OR">
+        <LHS xsi:type="hms:DoctorTerm" xmi:id="_GQHuE641Ee29Ed8lggJ07Q" count="2" specialization="_GQHuH641Ee29Ed8lggJ07Q"/>
+        <RHS xsi:type="hms:CompoundTerm" xmi:id="_GQHuFK41Ee29Ed8lggJ07Q">
+          <LHS xsi:type="hms:DoctorTerm" xmi:id="_GQHuFa41Ee29Ed8lggJ07Q" count="1" specialization="_GQHuH641Ee29Ed8lggJ07Q"/>
+          <RHS xsi:type="hms:CompoundTerm" xmi:id="_GQHuFq41Ee29Ed8lggJ07Q">
+            <LHS xsi:type="hms:DoctorTerm" xmi:id="_GQHuF641Ee29Ed8lggJ07Q" count="1" specialization="_GQHuHa41Ee29Ed8lggJ07Q"/>
+            <RHS xsi:type="hms:DoctorTerm" xmi:id="_GQHuGK41Ee29Ed8lggJ07Q" count="1" negated="true" specialization="_GQHuHq41Ee29Ed8lggJ07Q"/>
+          </RHS>
+        </RHS>
+      </LHS>
+      <RHS xsi:type="hms:CompoundTerm" xmi:id="_GQHuGa41Ee29Ed8lggJ07Q" operator="OR">
+        <LHS xsi:type="hms:NurseTerm" xmi:id="_GQHuGq41Ee29Ed8lggJ07Q" count="1" classification="Surgery"/>
+        <RHS xsi:type="hms:NurseTerm" xmi:id="_GQHuG641Ee29Ed8lggJ07Q" count="2"/>
+      </RHS>
+    </expression>
+  </rules>
+  <specializations xmi:id="_GQHuHK41Ee29Ed8lggJ07Q" name="General Surgeon"/>
+  <specializations xmi:id="_GQHuHa41Ee29Ed8lggJ07Q" name="ER Doctor"/>
+  <specializations xmi:id="_GQHuHq41Ee29Ed8lggJ07Q" name="ENT Specialist"/>
+  <specializations xmi:id="_GQHuH641Ee29Ed8lggJ07Q" name="Cardiologist"/>
+</hms:Hospital>

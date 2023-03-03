@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="ASCII"?>
+<hms:Hospital xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:hms="http://www.example.org/hms" xmi:id="_pkWGIK40Ee2W2vWflG_kQQ" name="assignment #2" address="nowhere">
+  <rules xmi:id="_pkaXkK40Ee2W2vWflG_kQQ" name="Knee Surgery">
+    <expression xsi:type="hms:CompoundTerm" xmi:id="_pkaXka40Ee2W2vWflG_kQQ">
+      <LHS xsi:type="hms:DoctorTerm" xmi:id="_pkaXkq40Ee2W2vWflG_kQQ" count="1" specialization="_pkaXlK40Ee2W2vWflG_kQQ"/>
+      <RHS xsi:type="hms:NurseTerm" xmi:id="_pkaXk640Ee2W2vWflG_kQQ" count="1" classification="Surgery"/>
+    </expression>
+  </rules>
+  <specializations xmi:id="_pkaXlK40Ee2W2vWflG_kQQ" name="General Surgeon"/>
+  <specializations xmi:id="_pkaXla40Ee2W2vWflG_kQQ" name="ER Doctor"/>
+  <specializations xmi:id="_pkaXlq40Ee2W2vWflG_kQQ" name="ENT Specialist"/>
+  <specializations xmi:id="_pkaXl640Ee2W2vWflG_kQQ" name="Cardiologist"/>
+</hms:Hospital>
