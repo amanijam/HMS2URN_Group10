@@ -1,6 +1,360 @@
--- @path URN=/seg.jUCMNav/src/seg/jUCMNav/emf/urn.ecore
--- @path HMS=/HMS/model/hms.ecore
+-- @path Urn=/seg.jUCMNav/src/seg/jUCMNav/emf/urn.ecore
+-- @path Hms=/HMS/model/hms.ecore
 
 
-module HAL2URN;
-create OUT: URN from IN: HMS;
+module HMS2URN;
+create OUT : Urn from IN : Hms;
+
+-- map the top-level entity
+rule Hospital2Urn {
+	from
+		h : Hms!Hospital
+	to
+		urnspec : Urn!URNspec,
+		urndef : Urn!URNdefinition (
+			urnspec <- h,
+
+			-- these really have to be "collect", doing resolveTemp on h.rules
+			-- directly will fail miserably :-(
+			specDiagrams <- h.rules->collect(c | thisModule.resolveTemp(c, 'd')),
+			components <- h.rules->collect(c | thisModule.resolveTemp(c, 'k'))
+		)
+}
+
+-- setup the diagram and a whole bunch of nasty nasty
+rule MgmtRule2SpecDiagam {
+	from
+		r : Hms!ManagementRule
+	to
+		d : Urn!UCMmap (
+			name <- r.name
+		),
+		k : Urn!Component (
+			name <- r.name
+		),
+
+		slbl : Urn!NodeLabel,
+		s : Urn!StartPoint (
+			diagram <- r,
+			name <- 'start',
+			label <- slbl,
+			contRef <- compRef
+		),
+
+		elbl : Urn!NodeLabel,
+		e : Urn!EndPoint (
+			diagram <- r,
+			name <- 'end',
+			label <- elbl,
+			contRef <- compRef
+		),
+
+		-- start/end points seem to need pre/post conditions
+		-- otherwise you get strange errors when clicking the outline
+		kpre : Urn!Condition (
+			startPoint <- s,
+			expression <- 'true'
+		),
+		kpost : Urn!Condition (
+			endPoint <- e,
+			expression <- 'true'
+		),
+		
+		-- can't forget about the component refs!
+		klbl : Urn!ComponentLabel,
+		compRef : Urn!ComponentRef (
+			diagram <- r,
+			label <- klbl,
+			contDef <- k
+		)
+		
+		-- NOTE:
+		-- this is how we want to do this:
+		-- 1. create nodes (FailurePoint, OrFork, OrJoin) declaratively
+		--    (so at this point, they're created)
+		-- 2. use do blocks to
+		--    1. create the links and link the nodes
+		--    2. compute the messages and the location
+		do {
+			thisModule.LinkNodes(
+				e,
+				thisModule.VisitLinkNode(r.expression, r, s),
+				d);
+
+			thisModule.ComputePos(s, e, compRef, r.expression);
+		}
+}
+
+
+-- "And" compounds just link the nodes up, so nothing needs to be done.
+-- "Or" compounds, on the other hand, create a OrFork and an OrJoin.
+rule OrCompound2Node {
+	from
+		t : Hms!CompoundTerm(t.operator = #OR)
+	to
+		fork : Urn!OrFork,
+		join : Urn!OrJoin
+}
+
+-- and when creating the atomic nodes, we only link the labels.
+-- why not compute the name? because we need the name to compute the position,
+-- and the order at which the actions are executed is unspecified!
+rule Atom2FP {
+	from
+		t : Hms!AtomicTerm
+	to
+		lbl : Urn!NodeLabel,
+		n : Urn!FailurePoint (
+			label <- t
+		)
+}
+
+rule LinkNodes(dst : Urn!PathNode, src : Urn!PathNode, diagram : Urn!UCMmap) {
+	to
+		conn : Urn!NodeConnection (
+			source <- src,
+			target <- dst,
+			diagram <- diagram
+		)
+	do {
+		dst;
+	}
+}
+
+rule VisitLinkNode(t : Hms!BooleanExpression, r : Hms!ManagementRule, src : Urn!PathNode) {
+	do {
+		if (t.oclIsKindOf(Hms!AtomicTerm)) {
+			src <- thisModule.VisitLinkAtomic(t, r, src);
+		} else if (t.operator = #AND) {
+			src <- thisModule.VisitLinkAndCompound(t, r, src);
+		} else {
+			src <- thisModule.VisitLinkOrCompound(t, r, src);
+		}
+		
+		src;
+	}
+}
+
+rule VisitLinkAndCompound(t : Hms!CompoundTerm, r : Hms!ManagementRule, src : Urn!PathNode) {
+	do {
+		src <- thisModule.VisitLinkNode(t.LHS, r, src);
+		src <- thisModule.VisitLinkNode(t.RHS, r, src);
+		src;
+	}
+}
+
+rule VisitLinkOrCompound(t : Hms!CompoundTerm, r : Hms!ManagementRule, src : Urn!PathNode) {
+	using {
+		fork : Urn!OrFork = thisModule.resolveTemp(t, 'fork');
+		join : Urn!OrJoin = thisModule.resolveTemp(t, 'join');
+		diagram : Urn!UCMmap = thisModule.resolveTemp(r, 'd');
+		contRef : Urn!ConponentRef = thisModule.resolveTemp(r, 'compRef');
+	}
+	do {
+		fork.diagram <- diagram;
+		fork.contRef <- contRef;
+		join.diagram <- diagram;
+		join.contRef <- contRef;
+		
+		thisModule.LinkNodes(fork, src, diagram);
+
+		src <- thisModule.VisitLinkNode(t.LHS, r, fork);
+		thisModule.LinkNodes(join, src, diagram);
+
+		src <- thisModule.VisitLinkNode(t.RHS, r, fork);
+		thisModule.LinkNodes(join, src, diagram);
+		
+		join;
+	}
+}
+
+rule VisitLinkAtomic(t : Hms!AtomicTerm, r : Hms!ManagementRule, src : Urn!PathNode) {
+	using {
+		n : Urn!FailurePoint = thisModule.resolveTemp(t, 'n');
+		diagram : Urn!UCMmap = thisModule.resolveTemp(r, 'd');
+		contRef : Urn!ConponentRef = thisModule.resolveTemp(r, 'compRef');
+	}
+	do {
+		n.diagram <- diagram;
+		n.contRef <- contRef;
+
+		thisModule.LinkNodes(n, src, diagram);
+		n;
+	}
+}
+
+rule ComputePos(startp : Urn!StartPoint, endp : Urn!EndPoint, box : Urn!ComponentRef, t : Hms!BooleanExpr) {
+	using {
+		pos : TupleType(x : Integer, y : Integer, endX : Integer, endY : Integer) =
+				Tuple{ x = 50, y = 80, endX = 50, endY = 80 };
+	}
+	do {
+		startp.x <- pos.x;
+		startp.y <- pos.y;
+		pos <- thisModule.Displace(pos, 50, 0);
+
+		pos <- thisModule.VisitComputePos(t, pos);
+
+		pos <- thisModule.Displace(pos, 50, 0);
+		endp.x <- pos.x;
+		endp.y <- pos.y;
+
+		box.x <- 25;
+		box.y <- 25;
+		box.width <- pos.endX;
+		box.height <- pos.endY + 25;
+	}
+}
+
+-- helper to update the position tuple...
+rule Displace(pos : TupleType(x : Integer, y : Integer, endX : Integer, endY : Integer),
+              dx : Integer, dy : Integer) {
+	do {
+		Tuple{
+			x = pos.x + dx,
+			y = pos.y + dy,
+			endX = pos.endX.max(pos.x + dx),
+			endY = pos.endY.max(pos.y + dy)
+		};
+	}
+}
+
+rule VisitComputePos(t : Hms!BooleanExpression, pos : TupleType(x : Integer, y : Integer, endX : Integer, endY : Integer)) {
+	do {
+		if (t.oclIsTypeOf(Hms!NurseTerm)) {
+			pos <- thisModule.VisitComputePosNurse(t, pos);
+		} else if (t.oclIsTypeOf(Hms!DoctorTerm)) {
+			pos <- thisModule.VisitComputePosDoctor(t, pos);
+		} else if (t.operator = #AND) {
+			pos <- thisModule.VisitComputePosAndCompound(t, pos);
+		} else {
+			pos <- thisModule.VisitComputePosOrCompound(t, pos);
+		}
+		
+		pos;
+	}
+}
+
+rule VisitComputePosAndCompound(t : Hms!CompoundTerm, pos : TupleType(x : Integer, y : Integer, endX : Integer, endY : Integer)) {
+	using {
+		pLhs : TupleType(x : Integer, y : Integer, endX : Integer, endY : Integer) = OclUndefined;
+		pRhs : TupleType(x : Integer, y : Integer, endX : Integer, endY : Integer) = OclUndefined;
+	}
+	do {
+		pLhs <- thisModule.VisitComputePos(t.LHS, pos);
+		
+		-- we want to propagate the new position state to RHS.
+		-- we want it to start (vertically) after LHS but start on the same
+		-- level as LHS.
+		pRhs <- thisModule.VisitComputePos(t.RHS, Tuple{
+			x = pLhs.x,
+			y = pos.y,
+			endX = pLhs.endX,
+			endY = pos.endY  	-- we also reset this
+		});
+
+		-- at last, we merge the two position states:
+		pos <- Tuple{
+			x = pRhs.x,
+			y = pos.y,
+			endX = pRhs.endX,
+			endY = pLhs.endY.max(pRhs.endY)
+		};
+		pos;
+	}
+}
+
+rule VisitComputePosOrCompound(t : Hms!CompoundTerm, pos : TupleType(x : Integer, y : Integer, endX : Integer, endY : Integer)) {
+	using {
+		fork : Urn!OrFork = thisModule.resolveTemp(t, 'fork');
+		join : Urn!OrJoin = thisModule.resolveTemp(t, 'join');
+
+		pLhs : TupleType(x : Integer, y : Integer, endX : Integer, endY : Integer) = OclUndefined;
+		pRhs : TupleType(x : Integer, y : Integer, endX : Integer, endY : Integer) = OclUndefined;
+	}
+	do {
+		fork.x <- pos.x;
+		fork.y <- pos.y;
+		pos <- thisModule.Displace(pos, 10, 0);
+
+		-- for (a or b), we want a and b to be left-aligned / same x but a
+		-- different y. we pick the easier route, which is to grow downwards.
+		-- b has to start after all the things in a.
+		pLhs <- thisModule.VisitComputePos(t.LHS, pos);
+		pRhs <- thisModule.VisitComputePos(t.RHS, Tuple{
+			x = pos.x,			-- vertical align
+			y = pLhs.endY + 60,	-- but lower than everything in LHS
+			endX = pLhs.endX,
+			endY = pLhs.endY + 60
+		});
+
+		-- merge the two position states:
+		-- (a or b) and c
+		-- c must vertically start after both a and b
+		-- but horizontally start on the same level as a
+		pos <- Tuple{
+			x = pLhs.x.max(pRhs.x), -- all things must start after
+			y = pos.y,				-- but same level as before
+
+			-- boundaries are already properly merged by Displace(...) 
+			endX = pRhs.endX,
+			endY = pRhs.endY
+		};
+		
+		-- with this, we map the join node
+		pos <- thisModule.Displace(pos, 10, 0);
+		join.x <- pos.x;
+		join.y <- pos.y;
+		pos;
+	}
+}
+
+rule VisitComputePosNurse(t : Hms!NurseTerm, pos : TupleType(x : Integer, y : Integer, endX : Integer, endY : Integer)) {
+	using {
+		n : Urn!FailurePoint = thisModule.resolveTemp(t, 'n');
+		name : String =
+				if t.negated then
+					(if t.count = 1 then 'is' else 'are' endif) + ' also'
+						+ ' ' + t.count.toString() + ' ' + t.classification
+						+ ' Nurse' + (if t.count = 1 then '' else 's' endif)
+				else
+					t.count.toString() + ' ' + t.classification
+						+ ' Nurse' + (if t.count = 1 then '' else 's' endif)
+						+ ' ' + (if t.count = 1 then 'does' else 'do' endif)
+						+ ' not exist'
+				endif;
+	}
+	do {
+		n.name <- name;
+		n.x <- pos.x + name.size() * 4;
+		n.y <- pos.y;
+
+		pos <- thisModule.Displace(pos, name.size() * 8, 0);
+		pos;
+	}
+}
+
+rule VisitComputePosDoctor(t : Hms!DoctorTerm, pos : TupleType(x : Integer, y : Integer, endX : Integer, endY : Integer)) {
+	using {
+		n : Urn!FailurePoint = thisModule.resolveTemp(t, 'n');
+		name : String =
+				if t.negated then
+					(if t.count = 1 then 'is' else 'are' endif) + ' also'
+						+ ' ' + t.count.toString() + ' ' + t.specialization.name
+						+ (if t.count = 1 then '' else 's' endif)
+				else
+					t.count.toString() + ' ' + t.specialization.name
+						+ (if t.count = 1 then '' else 's' endif)
+						+ ' ' + (if t.count = 1 then 'does' else 'do' endif)
+						+ ' not exist'
+				endif;
+	}
+	do {
+		n.name <- name;
+		n.x <- pos.x + name.size() * 4;
+		n.y <- pos.y;
+		
+		pos <- thisModule.Displace(pos, name.size() * 8, 0);
+		pos;
+	}
+}
