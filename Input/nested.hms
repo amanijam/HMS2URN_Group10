@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="ASCII"?>
+<hms:Hospital xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:hms="http://www.example.org/hms" xmi:id="_BikZ0K41Ee2atNUhgxkr-A" name="assignment #2" address="nowhere">
+  <rules xmi:id="_BioEMK41Ee2atNUhgxkr-A" name="Hip Surgery">
+    <expression xsi:type="hms:CompoundTerm" xmi:id="_BioEMa41Ee2atNUhgxkr-A">
+      <LHS xsi:type="hms:CompoundTerm" xmi:id="_BioEMq41Ee2atNUhgxkr-A" operator="OR">
+        <LHS xsi:type="hms:DoctorTerm" xmi:id="_BioEM641Ee2atNUhgxkr-A" count="1" specialization="_BioENq41Ee2atNUhgxkr-A"/>
+        <RHS xsi:type="hms:DoctorTerm" xmi:id="_BioENK41Ee2atNUhgxkr-A" count="2" specialization="_BioEN641Ee2atNUhgxkr-A"/>
+      </LHS>
+      <RHS xsi:type="hms:DoctorTerm" xmi:id="_BioENa41Ee2atNUhgxkr-A" count="1" negated="true" specialization="_BioEOK41Ee2atNUhgxkr-A"/>
+    </expression>
+  </rules>
+  <specializations xmi:id="_BioENq41Ee2atNUhgxkr-A" name="General Surgeon"/>
+  <specializations xmi:id="_BioEN641Ee2atNUhgxkr-A" name="ER Doctor"/>
+  <specializations xmi:id="_BioEOK41Ee2atNUhgxkr-A" name="ENT Specialist"/>
+  <specializations xmi:id="_BioEOa41Ee2atNUhgxkr-A" name="Cardiologist"/>
+</hms:Hospital>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="ASCII"?>
+<hms:Hospital xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:hms="http://www.example.org/hms" xmi:id="_ijVhgK40Ee2gwJSN2mPRPA" name="assignment #2" address="nowhere">
+  <rules xmi:id="_ijboIK40Ee2gwJSN2mPRPA" name="Blood Pressure Check">
+    <expression xsi:type="hms:NurseTerm" xmi:id="_ijcPMK40Ee2gwJSN2mPRPA" count="1"/>
+  </rules>
+  <specializations xmi:id="_ijcPMa40Ee2gwJSN2mPRPA" name="General Surgeon"/>
+  <specializations xmi:id="_ijcPMq40Ee2gwJSN2mPRPA" name="ER Doctor"/>
+  <specializations xmi:id="_ijcPM640Ee2gwJSN2mPRPA" name="ENT Specialist"/>
+  <specializations xmi:id="_ijcPNK40Ee2gwJSN2mPRPA" name="Cardiologist"/>
+</hms:Hospital>

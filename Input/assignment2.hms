@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="ASCII"?>
+<hms:Hospital xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:hms="http://www.example.org/hms" xmi:id="_PrYHkK41Ee2Oda0g2DEnTw" name="assignment #2" address="nowhere">
+  <rules xmi:id="_PrdAEK41Ee2Oda0g2DEnTw" name="Blood Pressure Check">
+    <expression xsi:type="hms:NurseTerm" xmi:id="_PrdAEa41Ee2Oda0g2DEnTw" count="1"/>
+  </rules>
+  <rules xmi:id="_PrdAEq41Ee2Oda0g2DEnTw" name="Knee Surgery">
+    <expression xsi:type="hms:CompoundTerm" xmi:id="_PrdAE641Ee2Oda0g2DEnTw">
+      <LHS xsi:type="hms:DoctorTerm" xmi:id="_PrdAFK41Ee2Oda0g2DEnTw" count="1" specialization="_PrdAKK41Ee2Oda0g2DEnTw"/>
+      <RHS xsi:type="hms:NurseTerm" xmi:id="_PrdAFa41Ee2Oda0g2DEnTw" count="1" classification="Surgery"/>
+    </expression>
+  </rules>
+  <rules xmi:id="_PrdAFq41Ee2Oda0g2DEnTw" name="Hip Surgery">
+    <expression xsi:type="hms:CompoundTerm" xmi:id="_PrdAF641Ee2Oda0g2DEnTw">
+      <LHS xsi:type="hms:CompoundTerm" xmi:id="_PrdAGK41Ee2Oda0g2DEnTw" operator="OR">
+        <LHS xsi:type="hms:DoctorTerm" xmi:id="_PrdAGa41Ee2Oda0g2DEnTw" count="1" specialization="_PrdAKK41Ee2Oda0g2DEnTw"/>
+        <RHS xsi:type="hms:DoctorTerm" xmi:id="_PrdAGq41Ee2Oda0g2DEnTw" count="2" specialization="_PrdAKa41Ee2Oda0g2DEnTw"/>
+      </LHS>
+      <RHS xsi:type="hms:DoctorTerm" xmi:id="_PrdAG641Ee2Oda0g2DEnTw" count="1" negated="true" specialization="_PrdAKq41Ee2Oda0g2DEnTw"/>
+    </expression>
+  </rules>
+  <rules xmi:id="_PrdAHK41Ee2Oda0g2DEnTw" name="Heart Surgery">
+    <expression xsi:type="hms:CompoundTerm" xmi:id="_PrdAHa41Ee2Oda0g2DEnTw">
+      <LHS xsi:type="hms:CompoundTerm" xmi:id="_PrdAHq41Ee2Oda0g2DEnTw" operator="OR">
+        <LHS xsi:type="hms:DoctorTerm" xmi:id="_PrdAH641Ee2Oda0g2DEnTw" count="2" specialization="_PrdAK641Ee2Oda0g2DEnTw"/>
+        <RHS xsi:type="hms:CompoundTerm" xmi:id="_PrdAIK41Ee2Oda0g2DEnTw">
+          <LHS xsi:type="hms:DoctorTerm" xmi:id="_PrdAIa41Ee2Oda0g2DEnTw" count="1" specialization="_PrdAK641Ee2Oda0g2DEnTw"/>
+          <RHS xsi:type="hms:CompoundTerm" xmi:id="_PrdAIq41Ee2Oda0g2DEnTw">
+            <LHS xsi:type="hms:DoctorTerm" xmi:id="_PrdAI641Ee2Oda0g2DEnTw" count="1" specialization="_PrdAKa41Ee2Oda0g2DEnTw"/>
+            <RHS xsi:type="hms:DoctorTerm" xmi:id="_PrdAJK41Ee2Oda0g2DEnTw" count="1" negated="true" specialization="_PrdAKq41Ee2Oda0g2DEnTw"/>
+          </RHS>
+        </RHS>
+      </LHS>
+      <RHS xsi:type="hms:CompoundTerm" xmi:id="_PrdAJa41Ee2Oda0g2DEnTw" operator="OR">
+        <LHS xsi:type="hms:NurseTerm" xmi:id="_PrdAJq41Ee2Oda0g2DEnTw" count="1" classification="Surgery"/>
+        <RHS xsi:type="hms:NurseTerm" xmi:id="_PrdAJ641Ee2Oda0g2DEnTw" count="2"/>
+      </RHS>
+    </expression>
+  </rules>
+  <rules xmi:id="_P1" name="Nasty example">
+    <expression xsi:type="hms:CompoundTerm" xmi:id="_P2" operator="OR">
+      <LHS xsi:type="hms:CompoundTerm" xmi:id="_P3" operator="OR">
+        <LHS xsi:type="hms:DoctorTerm" xmi:id="_P4" count="1" specialization="_PrdAKa41Ee2Oda0g2DEnTw"/>
+        <RHS xsi:type="hms:DoctorTerm" xmi:id="_P5" count="2" negated="true" specialization="_PrdAKq41Ee2Oda0g2DEnTw"/>
+      </LHS>
+      <RHS xsi:type="hms:CompoundTerm" xmi:id="_P6" operator="OR">
+        <LHS xsi:type="hms:CompoundTerm" xmi:id="_P10" operator="AND">
+          <LHS xsi:type="hms:DoctorTerm" xmi:id="_P7" count="3" specialization="_PrdAKa41Ee2Oda0g2DEnTw"/>
+          <RHS xsi:type="hms:CompoundTerm" xmi:id="_P11" operator="OR">
+            <LHS xsi:type="hms:NurseTerm" xmi:id="_P12" count="2"/>
+            <RHS xsi:type="hms:DoctorTerm" xmi:id="_P8" count="5" specialization="_PrdAKa41Ee2Oda0g2DEnTw"/>
+          </RHS>
+        </LHS>
+        <RHS xsi:type="hms:DoctorTerm" xmi:id="_P9" count="4" negated="true" specialization="_PrdAKq41Ee2Oda0g2DEnTw"/>
+      </RHS>
+    </expression>
+  </rules>
+  <specializations xmi:id="_PrdAKK41Ee2Oda0g2DEnTw" name="General Surgeon"/>
+  <specializations xmi:id="_PrdAKa41Ee2Oda0g2DEnTw" name="ER Doctor"/>
+  <specializations xmi:id="_PrdAKq41Ee2Oda0g2DEnTw" name="ENT Specialist"/>
+  <specializations xmi:id="_PrdAK641Ee2Oda0g2DEnTw" name="Cardiologist"/>
+</hms:Hospital>
