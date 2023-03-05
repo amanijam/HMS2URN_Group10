@@ -76,11 +76,11 @@ rule MgmtRule2SpecDiagam {
 		--    2. compute the messages and the positions
 		do {
 			thisModule.LinkNodes(
-				e,
-				thisModule.VisitLinkNode(r.expression, r, s),
+				endPnt,
+				thisModule.VisitLinkNode(r.expression, r, startPnt),
 				d);
 
-			thisModule.ComputePos(s, e, compRef, r.expression);
+			thisModule.ComputePos(startPnt, endPnt, compRef, r.expression);
 		}
 }
 
@@ -231,7 +231,7 @@ rule Displace(pos : TupleType(x : Integer, y : Integer, endX : Integer, endY : I
 
 rule VisitComputePos(t : Hms!BooleanExpression, pos : TupleType(x : Integer, y : Integer, endX : Integer, endY : Integer)) {
 	do {
-		-- Use corresponding "compute position" method depedning on term type
+		-- Use corresponding "compute position" method depending on term type
 		if (t.oclIsTypeOf(Hms!NurseTerm)) {
 			pos <- thisModule.VisitComputePosNurse(t, pos);
 		} else if (t.oclIsTypeOf(Hms!DoctorTerm)) {
