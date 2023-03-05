@@ -14,14 +14,14 @@ rule Hospital2Urn {
 		urndef : Urn!URNdefinition (
 			urnspec <- h,
 
-			-- these really have to be "collect", doing resolveTemp on h.rules
-			-- directly will fail miserably :-(
+			-- necessary to use "collect" here so that each Hospital Management rule
+			-- 	is properly assigned to a UCMmap and placed in a URN component (box)
 			specDiagrams <- h.rules->collect(c | thisModule.resolveTemp(c, 'd')),
 			components <- h.rules->collect(c | thisModule.resolveTemp(c, 'k'))
 		)
 }
 
--- setup the diagram and a whole bunch of nasty nasty
+-- setup the diagram and call all necessary tree traversals
 rule MgmtRule2SpecDiagam {
 	from
 		r : Hms!ManagementRule
@@ -33,38 +33,37 @@ rule MgmtRule2SpecDiagam {
 			name <- r.name
 		),
 
-		slbl : Urn!NodeLabel,
-		s : Urn!StartPoint (
+		startLbl : Urn!NodeLabel,
+		startPnt : Urn!StartPoint (
 			diagram <- r,
 			name <- 'start',
-			label <- slbl,
+			label <- startLbl,
 			contRef <- compRef
 		),
 
-		elbl : Urn!NodeLabel,
-		e : Urn!EndPoint (
+		endLbl : Urn!NodeLabel,
+		endPnt : Urn!EndPoint (
 			diagram <- r,
 			name <- 'end',
-			label <- elbl,
+			label <- endLbl,
 			contRef <- compRef
 		),
 
-		-- start/end points seem to need pre/post conditions
-		-- otherwise you get strange errors when clicking the outline
-		kpre : Urn!Condition (
-			startPoint <- s,
+		-- start/end points need pre/post conditions to avoid errors
+		preCond : Urn!Condition (
+			startPoint <- startPnt,
 			expression <- 'true'
 		),
-		kpost : Urn!Condition (
-			endPoint <- e,
+		postCond : Urn!Condition (
+			endPoint <- endPnt,
 			expression <- 'true'
 		),
 		
-		-- can't forget about the component refs!
-		klbl : Urn!ComponentLabel,
+		-- Component Ref
+		compLbl : Urn!ComponentLabel,
 		compRef : Urn!ComponentRef (
 			diagram <- r,
-			label <- klbl,
+			label <- compLbl,
 			contDef <- k
 		)
 		
@@ -72,9 +71,9 @@ rule MgmtRule2SpecDiagam {
 		-- this is how we want to do this:
 		-- 1. create nodes (FailurePoint, OrFork, OrJoin) declaratively
 		--    (so at this point, they're created)
-		-- 2. use do blocks to
+		-- 2. use do blocks to	
 		--    1. create the links and link the nodes
-		--    2. compute the messages and the location
+		--    2. compute the messages and the positions
 		do {
 			thisModule.LinkNodes(
 				e,
@@ -86,8 +85,8 @@ rule MgmtRule2SpecDiagam {
 }
 
 
--- "And" compounds just link the nodes up, so nothing needs to be done.
--- "Or" compounds, on the other hand, create a OrFork and an OrJoin.
+-- "And" compounds: Nothing needs to be done (nodes are just linked normally).
+-- "Or" compounds: Need to create an OrFork and an OrJoin.
 rule OrCompound2Node {
 	from
 		t : Hms!CompoundTerm(t.operator = #OR)
@@ -96,7 +95,7 @@ rule OrCompound2Node {
 		join : Urn!OrJoin
 }
 
--- and when creating the atomic nodes, we only link the labels.
+-- When creating the Atomic nodes, we only link the labels.
 -- why not compute the name? because we need the name to compute the position,
 -- and the order at which the actions are executed is unspecified!
 rule Atom2FP {
@@ -111,6 +110,7 @@ rule Atom2FP {
 
 rule LinkNodes(dst : Urn!PathNode, src : Urn!PathNode, diagram : Urn!UCMmap) {
 	to
+		-- new connection in diagram that links src and dst
 		conn : Urn!NodeConnection (
 			source <- src,
 			target <- dst,
@@ -123,6 +123,7 @@ rule LinkNodes(dst : Urn!PathNode, src : Urn!PathNode, diagram : Urn!UCMmap) {
 
 rule VisitLinkNode(t : Hms!BooleanExpression, r : Hms!ManagementRule, src : Urn!PathNode) {
 	do {
+		-- Use corresponsing method depending on the expression type (atomic, and, or)
 		if (t.oclIsKindOf(Hms!AtomicTerm)) {
 			src <- thisModule.VisitLinkAtomic(t, r, src);
 		} else if (t.operator = #AND) {
@@ -135,6 +136,7 @@ rule VisitLinkNode(t : Hms!BooleanExpression, r : Hms!ManagementRule, src : Urn!
 	}
 }
 
+-- Simply link LHS and RHS
 rule VisitLinkAndCompound(t : Hms!CompoundTerm, r : Hms!ManagementRule, src : Urn!PathNode) {
 	do {
 		src <- thisModule.VisitLinkNode(t.LHS, r, src);
@@ -143,6 +145,7 @@ rule VisitLinkAndCompound(t : Hms!CompoundTerm, r : Hms!ManagementRule, src : Ur
 	}
 }
 
+-- Link FORK and JOIN nodes as well
 rule VisitLinkOrCompound(t : Hms!CompoundTerm, r : Hms!ManagementRule, src : Urn!PathNode) {
 	using {
 		fork : Urn!OrFork = thisModule.resolveTemp(t, 'fork');
@@ -168,6 +171,7 @@ rule VisitLinkOrCompound(t : Hms!CompoundTerm, r : Hms!ManagementRule, src : Urn
 	}
 }
 
+-- Add node and failure point to diagram
 rule VisitLinkAtomic(t : Hms!AtomicTerm, r : Hms!ManagementRule, src : Urn!PathNode) {
 	using {
 		n : Urn!FailurePoint = thisModule.resolveTemp(t, 'n');
@@ -183,6 +187,10 @@ rule VisitLinkAtomic(t : Hms!AtomicTerm, r : Hms!ManagementRule, src : Urn!PathN
 	}
 }
 
+
+
+-- ** POSITIONING: **
+	
 rule ComputePos(startp : Urn!StartPoint, endp : Urn!EndPoint, box : Urn!ComponentRef, t : Hms!BooleanExpr) {
 	using {
 		pos : TupleType(x : Integer, y : Integer, endX : Integer, endY : Integer) =
@@ -191,14 +199,16 @@ rule ComputePos(startp : Urn!StartPoint, endp : Urn!EndPoint, box : Urn!Componen
 	do {
 		startp.x <- pos.x;
 		startp.y <- pos.y;
-		pos <- thisModule.Displace(pos, 50, 0);
+		pos <- thisModule.Displace(pos, 50, 0);	-- 50 pnts buffer from start position
 
-		pos <- thisModule.VisitComputePos(t, pos);
+		pos <- thisModule.VisitComputePos(t, pos);	-- compute end position of expression
 
-		pos <- thisModule.Displace(pos, 50, 0);
+		pos <- thisModule.Displace(pos, 50, 0); -- 50 pnts buffer from where last expression ended
 		endp.x <- pos.x;
 		endp.y <- pos.y;
-
+		
+		-- box top left point always (25, 25)
+		-- expand width and height as bottom right corner changes
 		box.x <- 25;
 		box.y <- 25;
 		box.width <- pos.endX;
@@ -206,7 +216,7 @@ rule ComputePos(startp : Urn!StartPoint, endp : Urn!EndPoint, box : Urn!Componen
 	}
 }
 
--- helper to update the position tuple...
+-- helper to update the position tuple
 rule Displace(pos : TupleType(x : Integer, y : Integer, endX : Integer, endY : Integer),
               dx : Integer, dy : Integer) {
 	do {
@@ -221,6 +231,7 @@ rule Displace(pos : TupleType(x : Integer, y : Integer, endX : Integer, endY : I
 
 rule VisitComputePos(t : Hms!BooleanExpression, pos : TupleType(x : Integer, y : Integer, endX : Integer, endY : Integer)) {
 	do {
+		-- Use corresponding "compute position" method depedning on term type
 		if (t.oclIsTypeOf(Hms!NurseTerm)) {
 			pos <- thisModule.VisitComputePosNurse(t, pos);
 		} else if (t.oclIsTypeOf(Hms!DoctorTerm)) {
@@ -244,13 +255,12 @@ rule VisitComputePosAndCompound(t : Hms!CompoundTerm, pos : TupleType(x : Intege
 		pLhs <- thisModule.VisitComputePos(t.LHS, pos);
 		
 		-- we want to propagate the new position state to RHS.
-		-- we want it to start (vertically) after LHS but start on the same
-		-- level as LHS.
+		-- we want it to start (vertically) after LHS but on the same level as LHS.
 		pRhs <- thisModule.VisitComputePos(t.RHS, Tuple{
 			x = pLhs.x,
 			y = pos.y,
 			endX = pLhs.endX,
-			endY = pos.endY  	-- we also reset this
+			endY = pos.endY  	-- we also reset this (in case endY was altered by LHS operation)
 		});
 
 		-- at last, we merge the two position states:
@@ -312,6 +322,8 @@ rule VisitComputePosOrCompound(t : Hms!CompoundTerm, pos : TupleType(x : Integer
 rule VisitComputePosNurse(t : Hms!NurseTerm, pos : TupleType(x : Integer, y : Integer, endX : Integer, endY : Integer)) {
 	using {
 		n : Urn!FailurePoint = thisModule.resolveTemp(t, 'n');
+	
+		-- Compute name
 		name : String =
 				if t.negated then
 					(if t.count = 1 then 'is' else 'are' endif) + ' also'
@@ -326,10 +338,12 @@ rule VisitComputePosNurse(t : Hms!NurseTerm, pos : TupleType(x : Integer, y : In
 	}
 	do {
 		n.name <- name;
-		n.x <- pos.x + name.size() * 4;
-		n.y <- pos.y;
+		
+		-- Assume each character is 8 pnts wide
+		n.x <- pos.x + name.size() * 4;	-- the center x is halfway (num characters in name * (8/2))
+		n.y <- pos.y;					--  same vertical alignment
 
-		pos <- thisModule.Displace(pos, name.size() * 8, 0);
+		pos <- thisModule.Displace(pos, name.size() * 8, 0); -- displace pos by (num characters in name)*8 pnts
 		pos;
 	}
 }
@@ -337,6 +351,8 @@ rule VisitComputePosNurse(t : Hms!NurseTerm, pos : TupleType(x : Integer, y : In
 rule VisitComputePosDoctor(t : Hms!DoctorTerm, pos : TupleType(x : Integer, y : Integer, endX : Integer, endY : Integer)) {
 	using {
 		n : Urn!FailurePoint = thisModule.resolveTemp(t, 'n');
+	
+		-- Compute name
 		name : String =
 				if t.negated then
 					(if t.count = 1 then 'is' else 'are' endif) + ' also'
@@ -351,10 +367,12 @@ rule VisitComputePosDoctor(t : Hms!DoctorTerm, pos : TupleType(x : Integer, y : 
 	}
 	do {
 		n.name <- name;
-		n.x <- pos.x + name.size() * 4;
-		n.y <- pos.y;
 		
-		pos <- thisModule.Displace(pos, name.size() * 8, 0);
+		-- Assume each character is 8 pnts wide
+		n.x <- pos.x + name.size() * 4; -- the center x is halfway (num characters in name * (8/2))
+		n.y <- pos.y;					--  same vertical alignment
+		
+		pos <- thisModule.Displace(pos, name.size() * 8, 0); -- displace pos by (num characters in name)*8 pnts
 		pos;
 	}
 }
